@@ -1,0 +1,17 @@
+type: edu
+custom_name: Security first!
+files:
+  - name: src/account/AccountServiceApplication.java
+    visible: true
+    learner_created: false
+  - name: src/resources/application.properties
+    visible: true
+    learner_created: false
+  - name: build.gradle
+    visible: true
+    learner_created: false
+  - name: test/AccountServiceTest.java
+    learner_created: false
+feedback_link: https://hyperskill.org/projects/217/stages/1088/implement#comment
+status: Unchecked
+record: -1
