@@ -10,6 +10,7 @@ files:
     visible: true
     learner_created: false
   - name: test/AccountServiceTest.java
+    visible: true
     learner_created: false
 feedback_link: https://hyperskill.org/projects/217/stages/1089/implement#comment
 status: Unchecked

@@ -2,6 +2,7 @@ package account.model;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 
 public record UserRequest(
 
@@ -19,5 +20,6 @@ public record UserRequest(
         String email,
 
         @NotBlank(message = "Password cannot be blank")
+        @Size(min = 12, message = "Password length must be 12 chars minimum!")
         String password
 ) {}

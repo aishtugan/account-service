@@ -9,8 +9,35 @@ files:
   - name: build.gradle
     visible: true
     learner_created: false
+  - name: src/account/model/User.java
+    visible: true
+    learner_created: false
+  - name: src/account/model/UserResponse.java
+    visible: true
+    learner_created: false
+  - name: src/account/model/UserRequest.java
+    visible: true
+    learner_created: false
+  - name: src/account/controller/AccountServiceController.java
+    visible: true
+    learner_created: false
+  - name: src/account/service/AccountService.java
+    visible: true
+    learner_created: false
+  - name: src/account/config/SecurityConfig.java
+    visible: true
+    learner_created: false
+  - name: src/account/repository/UserRepository.java
+    visible: true
+    learner_created: false
   - name: test/AccountServiceTest.java
     learner_created: false
+  - name: src/account/config/RestAuthenticationEntryPoint.java
+    visible: true
+    learner_created: true
 feedback_link: https://hyperskill.org/projects/217/stages/1087/implement#comment
-status: Unchecked
+status: Solved
+feedback:
+  message: Congratulations!
+  time: "Thu, 11 Jun 2026 00:24:42 UTC"
 record: -1

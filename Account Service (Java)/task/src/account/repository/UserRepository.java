@@ -1,29 +1,14 @@
 package account.repository;
 
 import account.model.User;
-import org.springframework.stereotype.Repository;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.HashMap;
+import java.util.Optional;
 
-@Repository
-public class UserRepository {
+public interface UserRepository extends JpaRepository<User, Long> {
 
-    public final HashMap<String, User> usersBase = new HashMap<String, User>();
+    boolean existsByEmailIgnoreCase(String email);
 
-    UserRepository() {
-
-    }
-
-    public void addUser(User user) {
-        usersBase.put(user.getEmail(), user);
-    }
-
-    public User getUser(String email) {
-        return usersBase.get(email);
-    }
-
-    public boolean isUserExist(String email) {
-        return usersBase.containsKey(email);
-    }
+    Optional<User> findByEmailIgnoreCase(String email);
 
 }
