@@ -1,14 +1,13 @@
 package account.controller;
 
-import account.model.PasswordRequest;
-import account.model.PasswordResponse;
-import account.model.UserRequest;
-import account.model.UserResponse;
+import account.model.*;
 import account.service.AccountService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api")
@@ -29,8 +28,18 @@ public class AccountServiceController {
         return ResponseEntity.ok(accountService.setNewPassword(passwordRequest, authentication.getName()));
     }
 
+    @PostMapping("/acct/payments")
+    public ResponseEntity<PaymentResponse> uploadPayrolls(@Valid @RequestBody List<PaymentRequest> paymentRequests) {
+        return ResponseEntity.ok(accountService.savePayments(paymentRequests));
+    }
+
+    @PutMapping("/acct/payments")
+    public ResponseEntity<PaymentResponse> updatePayrolls(@Valid @RequestBody PaymentRequest paymentRequest) {
+        return ResponseEntity.ok(accountService.updatePayment(paymentRequest));
+    }
+
     @GetMapping("/empl/payment")
-    public ResponseEntity<UserResponse> emplPayment(Authentication authentication) {
-        return ResponseEntity.ok(accountService.findUser(authentication.getName()));
+    public ResponseEntity<?> emplPayment( @RequestParam(required = false) String period, Authentication authentication) {
+        return ResponseEntity.ok(accountService.getSalary(authentication.getName(), period));
     }
 }
