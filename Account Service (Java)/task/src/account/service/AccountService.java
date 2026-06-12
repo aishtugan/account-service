@@ -35,7 +35,7 @@ public class AccountService {
         this.eventLogRepository = eventLogRepository;
     }
 
-    public UserResponse createUser(UserRequest userRequest) {
+    public UserResponse createUser(UserRequest userRequest, String path) {
 
         if (userRepository.existsByEmailIgnoreCase(userRequest.email())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "User exist!");
@@ -54,7 +54,7 @@ public class AccountService {
         }
 
         userRepository.save(user);
-
+        writeEventLog(EventAction.CREATE_USER, "Anonymous", user.getEmail(), path);
         return toUserResponse(user);
     }
 
@@ -71,7 +71,7 @@ public class AccountService {
         return userRepository.findAll(Sort.by(Sort.Direction.ASC, "id")).stream().map(this::toUserResponse).toList();
     }
 
-    public UserDeletionResponse deleteUser(String userEmail) {
+    public UserDeletionResponse deleteUser(String userEmail, String authUser, String path) {
 
         if (!userRepository.existsByEmailIgnoreCase(userEmail)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found!");
@@ -83,10 +83,11 @@ public class AccountService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Can't remove ADMINISTRATOR role!");
         }
         userRepository.delete(user);
+        writeEventLog(EventAction.DELETE_USER, authUser, userEmail, path);
         return new UserDeletionResponse(userEmail, "Deleted successfully!");
     }
 
-    public UserResponse updateUserRole(RoleRequest roleRequest) {
+    public UserResponse updateUserRole(RoleRequest roleRequest, String path) {
 
         if (!userRepository.existsByEmailIgnoreCase(roleRequest.user())) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found!");
@@ -117,7 +118,7 @@ public class AccountService {
             if (userRoles.size() == 1) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The user must have at least one role!");
             }
-
+            writeEventLog(EventAction.REMOVE_ROLE, user.getEmail(), String.format("Remove role %s from %s", roleRequest.role().toUpperCase(), user.getEmail()), path);
             user.removeRole(role);
 
         } else {
@@ -131,6 +132,7 @@ public class AccountService {
             }
 
             user.addRole(role);
+            writeEventLog(EventAction.GRANT_ROLE, user.getEmail(), String.format("Grant role %s to %s", roleRequest.role().toUpperCase(), user.getEmail()), path);
         }
 
         userRepository.save(user);
@@ -179,7 +181,7 @@ public class AccountService {
         return breachedPasswords().contains(password);
     }
 
-    public PasswordResponse setNewPassword(PasswordRequest passwordRequest, String email) {
+    public PasswordResponse setNewPassword(PasswordRequest passwordRequest, String email, String path) {
 
         User user = userRepository.findByEmailIgnoreCase(email).orElseThrow();
 
@@ -193,7 +195,7 @@ public class AccountService {
 
         user.setPassword(passwordEncoder.encode(passwordRequest.new_password()));
         userRepository.save(user);
-
+        writeEventLog(EventAction.CHANGE_PASSWORD, email, email, path);
         return new PasswordResponse(email, "The password has been updated successfully");
     }
 
@@ -336,12 +338,14 @@ public class AccountService {
         eventLogRepository.save(eventLog);
     }
 
-    public StatusResponse updateUserAccess(LockUserRequest lockUserRequest) {
+    public StatusResponse updateUserAccess(LockUserRequest lockUserRequest, String path) {
 
         if (lockUserRequest.operation() == LockOperation.LOCK) {
             lockUser(lockUserRequest.user());
+            writeEventLog(EventAction.LOCK_USER, lockUserRequest.user(), String.format("Lock user %s", lockUserRequest.user()), path);
         } else if (lockUserRequest.operation() == LockOperation.UNLOCK) {
             unlockUser(lockUserRequest.user());
+            writeEventLog(EventAction.UNLOCK_USER, lockUserRequest.user(), String.format("Unlock user %s", lockUserRequest.user()), path);
         } else {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid operation!");
         }

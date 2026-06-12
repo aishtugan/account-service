@@ -20,12 +20,12 @@ public class AccountServiceController {
 
     @PostMapping("/auth/signup")
     public ResponseEntity<UserResponse> signup(@Valid @RequestBody UserRequest userRequest) {
-        return ResponseEntity.ok(accountService.createUser(userRequest));
+        return ResponseEntity.ok(accountService.createUser(userRequest, "/api/auth/signup"));
     }
 
     @PostMapping("/auth/changepass")
     public ResponseEntity<PasswordResponse> changePassword(@Valid @RequestBody PasswordRequest passwordRequest, Authentication authentication) {
-        return ResponseEntity.ok(accountService.setNewPassword(passwordRequest, authentication.getName()));
+        return ResponseEntity.ok(accountService.setNewPassword(passwordRequest, authentication.getName(), "/api/auth/changepass"));
     }
 
     @PostMapping("/acct/payments")
@@ -49,18 +49,18 @@ public class AccountServiceController {
     }
 
     @DeleteMapping("/admin/user/{userEmail}")
-    public ResponseEntity<UserDeletionResponse> deleteUser(@PathVariable String userEmail) {
-        return ResponseEntity.ok(accountService.deleteUser(userEmail));
+    public ResponseEntity<UserDeletionResponse> deleteUser(@PathVariable String userEmail, Authentication authentication) {
+        return ResponseEntity.ok(accountService.deleteUser(userEmail, authentication.getName(), "/api/admin/user"));
     }
 
     @PutMapping("/admin/user/role")
     public ResponseEntity<UserResponse> updateUserRole(@Valid @RequestBody RoleRequest roleRequest) {
-        return ResponseEntity.ok(accountService.updateUserRole(roleRequest));
+        return ResponseEntity.ok(accountService.updateUserRole(roleRequest, "/api/admin/user/role"));
     }
 
     @PutMapping("/admin/user/access")
     public ResponseEntity<StatusResponse> updateUserAccess(@Valid @RequestBody LockUserRequest lockUserRequest) {
-        return ResponseEntity.ok(accountService.updateUserAccess(lockUserRequest));
+        return ResponseEntity.ok(accountService.updateUserAccess(lockUserRequest, "/api/admin/user/access"));
     }
 
     @GetMapping("/security/events")
