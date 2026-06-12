@@ -1,6 +1,7 @@
 package account.service;
 
 import account.model.*;
+import account.repository.EventLogRepository;
 import account.repository.PaymentRepository;
 import account.repository.UserRepository;
 import org.springframework.context.annotation.Bean;
@@ -25,10 +26,13 @@ public class AccountService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final PaymentRepository paymentRepository;
-    public AccountService(UserRepository userRepository, PasswordEncoder passwordEncoder, PaymentRepository paymentRepository) {
+    private final EventLogRepository eventLogRepository;
+
+    public AccountService(UserRepository userRepository, PasswordEncoder passwordEncoder, PaymentRepository paymentRepository, EventLogRepository eventLogRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.paymentRepository = paymentRepository;
+        this.eventLogRepository = eventLogRepository;
     }
 
     public UserResponse createUser(UserRequest userRequest) {
@@ -121,8 +125,8 @@ public class AccountService {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The user already has this role!");
             }
 
-            if ((role == Role.ROLE_ADMINISTRATOR && (userRoles.contains(Role.ROLE_USER) || userRoles.contains(Role.ROLE_ACCOUNTANT)))
-            || ((role == Role.ROLE_ACCOUNTANT || role == Role.ROLE_USER) && userRoles.contains(Role.ROLE_ADMINISTRATOR))) {
+            if ((role == Role.ROLE_ADMINISTRATOR && (userRoles.contains(Role.ROLE_USER) || userRoles.contains(Role.ROLE_ACCOUNTANT) || userRoles.contains(Role.ROLE_AUDITOR)))
+            || ((role == Role.ROLE_ACCOUNTANT || role == Role.ROLE_USER || role == Role.ROLE_AUDITOR) && userRoles.contains(Role.ROLE_ADMINISTRATOR))) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The user cannot combine administrative and business roles!");
             }
 
@@ -154,7 +158,8 @@ public class AccountService {
                 userRequest.name(),
                 userRequest.lastname(),
                 userRequest.email().toLowerCase(),
-                passwordEncoder.encode(userRequest.password())
+                passwordEncoder.encode(userRequest.password()),
+                false
         );
     }
 
@@ -295,6 +300,69 @@ public class AccountService {
                 payment.getUser().getLastname(),
                 formatPeriodFromYMtoString(payment.getPeriod()),
                 formatSalary(payment.getSalary())
+        );
+    }
+
+    public void lockUser(String email) {
+        User user = userRepository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found!"));
+
+        if (user.getRoles().contains(Role.ROLE_ADMINISTRATOR)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Can't lock the ADMINISTRATOR!");
+        }
+
+        if (user.isLocked()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "User is already locked!");
+        }
+
+        user.setLocked(true);
+        userRepository.save(user);
+    }
+
+    public void unlockUser(String email) {
+        User user = userRepository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found!"));
+
+        if (!user.isLocked()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "User is not locked!");
+        }
+
+        user.setLocked(false);
+        userRepository.save(user);
+    }
+
+    public void writeEventLog(EventAction action, String subject, String object, String path) {
+        EventLog eventLog = new EventLog(action, subject, object, path);
+        eventLogRepository.save(eventLog);
+    }
+
+    public StatusResponse updateUserAccess(LockUserRequest lockUserRequest) {
+
+        if (lockUserRequest.operation() == LockOperation.LOCK) {
+            lockUser(lockUserRequest.user());
+        } else if (lockUserRequest.operation() == LockOperation.UNLOCK) {
+            unlockUser(lockUserRequest.user());
+        } else {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid operation!");
+        }
+
+        String status = lockUserRequest.operation() == LockOperation.LOCK ? "locked" : "unlocked";
+
+        return new StatusResponse(String.format("User %s %s!", lockUserRequest.user(), status));
+    }
+
+    public List<EventResponse> getAllEventLogs() {
+        return eventLogRepository.findAll().stream().map(this::eventLogToEventResponse).toList();
+    }
+
+    public EventResponse eventLogToEventResponse(EventLog eventLog) {
+        return new EventResponse(
+                eventLog.getId(),
+                eventLog.getDate(),
+                eventLog.getAction().toString(),
+                eventLog.getSubject(),
+                eventLog.getObject(),
+                eventLog.getPath()
         );
     }
 }

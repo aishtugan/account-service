@@ -15,6 +15,7 @@ public class User {
     private String lastname;
     private String email;
     private String password;
+    private boolean locked = false;
 
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(
@@ -27,11 +28,12 @@ public class User {
 
     public User() {
     }
-    public User(String name, String lastname, String email, String password) {
+    public User(String name, String lastname, String email, String password, boolean locked) {
         this.name = name;
         this.lastname = lastname;
         this.email = email;
         this.password = password;
+        this.locked = locked;
     }
     public Long getId() {
         return id;
@@ -45,7 +47,6 @@ public class User {
     public String getEmail() {
         return email;
     }
-
     public String getPassword() {
         return password;
     }
@@ -66,4 +67,11 @@ public class User {
         roles.remove(role);
     }
 
+    public boolean isLocked() {
+        return locked;
+    }
+
+    public void setLocked(boolean locked) {
+        this.locked = locked;
+    }
 }

@@ -57,4 +57,14 @@ public class AccountServiceController {
     public ResponseEntity<UserResponse> updateUserRole(@Valid @RequestBody RoleRequest roleRequest) {
         return ResponseEntity.ok(accountService.updateUserRole(roleRequest));
     }
+
+    @PutMapping("/admin/user/access")
+    public ResponseEntity<StatusResponse> updateUserAccess(@Valid @RequestBody LockUserRequest lockUserRequest) {
+        return ResponseEntity.ok(accountService.updateUserAccess(lockUserRequest));
+    }
+
+    @GetMapping("/security/events")
+    public ResponseEntity<List<EventResponse>> getAllEventLogs() {
+        return ResponseEntity.ok(accountService.getAllEventLogs());
+    }
 }
