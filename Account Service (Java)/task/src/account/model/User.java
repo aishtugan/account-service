@@ -16,6 +16,7 @@ public class User {
     private String email;
     private String password;
     private boolean locked = false;
+    private int failedAttempts;
 
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(
@@ -73,5 +74,17 @@ public class User {
 
     public void setLocked(boolean locked) {
         this.locked = locked;
+    }
+
+    public int getFailedAttempts() {
+        return failedAttempts;
+    }
+
+    public void increaseFailedAttempts() {
+        this.failedAttempts++;
+    }
+
+    public void resetFailedAttempts() {
+        this.failedAttempts = 0;
     }
 }

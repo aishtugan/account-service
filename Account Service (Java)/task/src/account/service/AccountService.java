@@ -58,15 +58,6 @@ public class AccountService {
         return toUserResponse(user);
     }
 
-    public UserResponse findUser(String email) {
-
-        if (!userRepository.existsByEmailIgnoreCase(email)) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized");
-        }
-
-        return toUserResponse(userRepository.findByEmailIgnoreCase(email).orElseThrow());
-    }
-
     public List<UserResponse> getAllUsers() {
         return userRepository.findAll(Sort.by(Sort.Direction.ASC, "id")).stream().map(this::toUserResponse).toList();
     }
@@ -305,7 +296,7 @@ public class AccountService {
         );
     }
 
-    public void lockUser(String email) {
+    public void lockUser(String email, String authUser, String path) {
         User user = userRepository.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found!"));
 
@@ -319,9 +310,10 @@ public class AccountService {
 
         user.setLocked(true);
         userRepository.save(user);
+        writeEventLog(EventAction.LOCK_USER, authUser, "Lock user " + email, path);
     }
 
-    public void unlockUser(String email) {
+    public void unlockUser(String email, String authUser, String path) {
         User user = userRepository.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found!"));
 
@@ -331,6 +323,36 @@ public class AccountService {
 
         user.setLocked(false);
         userRepository.save(user);
+        writeEventLog(EventAction.UNLOCK_USER, authUser, "Unlock user " + email, path);
+    }
+
+    public void checkBruteForce(String email, String path) {
+
+        User user = userRepository.findByEmailIgnoreCase(email).orElse(null);
+        int failedAttempts = user != null ? user.getFailedAttempts() : 0;
+
+        boolean bruteForce = failedAttempts == 5;
+
+        if (!bruteForce) {
+            return;
+        }
+
+        if (user.getRoles().contains(Role.ROLE_ADMINISTRATOR) || user.isLocked()) {
+            return;
+        }
+
+        writeEventLog(EventAction.BRUTE_FORCE, email, path, path);
+
+        user.setLocked(true);
+        userRepository.save(user);
+
+        writeEventLog(EventAction.LOCK_USER, email, "Lock user " + email, path);
+    }
+
+    public boolean isUserLocked(String email) {
+        return userRepository.findByEmailIgnoreCase(email)
+                .map(User::isLocked)
+                .orElse(false);
     }
 
     public void writeEventLog(EventAction action, String subject, String object, String path) {
@@ -340,19 +362,18 @@ public class AccountService {
 
     public StatusResponse updateUserAccess(LockUserRequest lockUserRequest, String authUser, String path) {
 
+        String status = lockUserRequest.operation() == LockOperation.LOCK ? "locked" : "unlocked";
+        String userEmail = lockUserRequest.user().toLowerCase();
+
         if (lockUserRequest.operation() == LockOperation.LOCK) {
-            lockUser(lockUserRequest.user());
-            writeEventLog(EventAction.LOCK_USER, authUser, String.format("Lock user %s", lockUserRequest.user()), path);
+            lockUser(userEmail, authUser, path);
         } else if (lockUserRequest.operation() == LockOperation.UNLOCK) {
-            unlockUser(lockUserRequest.user());
-            writeEventLog(EventAction.UNLOCK_USER, authUser, String.format("Unlock user %s", lockUserRequest.user()), path);
+            unlockUser(userEmail, authUser, path);
         } else {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid operation!");
         }
 
-        String status = lockUserRequest.operation() == LockOperation.LOCK ? "locked" : "unlocked";
-
-        return new StatusResponse(String.format("User %s %s!", lockUserRequest.user(), status));
+        return new StatusResponse(String.format("User %s %s!", userEmail, status));
     }
 
     public List<EventResponse> getAllEventLogs() {
@@ -368,5 +389,11 @@ public class AccountService {
                 eventLog.getObject(),
                 eventLog.getPath()
         );
+    }
+
+    public void resetFailedAttempts(String email) {
+        User user = userRepository.findByEmailIgnoreCase(email).orElseThrow();
+        user.resetFailedAttempts();
+        userRepository.save(user);
     }
 }

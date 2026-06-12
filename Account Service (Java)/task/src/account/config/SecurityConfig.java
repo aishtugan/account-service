@@ -2,19 +2,17 @@ package account.config;
 
 import account.model.EventAction;
 import account.model.EventLog;
+import account.model.User;
 import account.repository.EventLogRepository;
 import account.repository.UserRepository;
+import account.service.AccountService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.security.authentication.event.AbstractAuthenticationFailureEvent;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
@@ -22,13 +20,9 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
-import org.springframework.security.web.authentication.HttpStatusEntryPoint;
-import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
@@ -38,9 +32,13 @@ import java.util.*;
 public class SecurityConfig {
 
     private final EventLogRepository eventLogRepository;
+    private final UserRepository userRepository;
+    private final AccountService accountService;
 
-    public SecurityConfig(EventLogRepository eventLogRepository) {
+    public SecurityConfig(EventLogRepository eventLogRepository, AccountService accountService, UserRepository userRepository) {
         this.eventLogRepository = eventLogRepository;
+        this.accountService = accountService;
+        this.userRepository = userRepository;
     }
 
     @Bean
@@ -92,12 +90,6 @@ public class SecurityConfig {
     }
 
     @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder(13);
-    }
-
-
-    @Bean
     public AccessDeniedHandler accessDeniedHandler() {
         return (request, response, accessDeniedException) -> {
             String path = request.getRequestURI();
@@ -124,9 +116,18 @@ public class SecurityConfig {
         return (request, response, authException) -> {
             String path = request.getRequestURI();
 
-            extractBasicUsername(request).ifPresent(subject ->
-                    eventLogRepository.save(new EventLog(EventAction.LOGIN_FAILED, subject, path, path))
-            );
+            extractBasicUsername(request).ifPresent(subject -> {
+                if (accountService.isUserLocked(subject)) {
+                    return;
+                }
+                eventLogRepository.save(new EventLog(EventAction.LOGIN_FAILED, subject, path, path));
+                User user = userRepository.findByEmailIgnoreCase(subject).orElse(null);
+                if (user != null) {
+                    user.increaseFailedAttempts();
+                    userRepository.save(user);
+                }
+                accountService.checkBruteForce(subject, path);
+            });
 
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, authException.getMessage());
         };
