@@ -42,4 +42,19 @@ public class AccountServiceController {
     public ResponseEntity<?> emplPayment( @RequestParam(required = false) String period, Authentication authentication) {
         return ResponseEntity.ok(accountService.getSalary(authentication.getName(), period));
     }
+
+    @GetMapping({"/admin/user", "/admin/user/"})
+    public ResponseEntity<List<UserResponse>> getAllUsers() {
+        return ResponseEntity.ok(accountService.getAllUsers());
+    }
+
+    @DeleteMapping("/admin/user/{userEmail}")
+    public ResponseEntity<UserDeletionResponse> deleteUser(@PathVariable String userEmail) {
+        return ResponseEntity.ok(accountService.deleteUser(userEmail));
+    }
+
+    @PutMapping("/admin/user/role")
+    public ResponseEntity<UserResponse> updateUserRole(@Valid @RequestBody RoleRequest roleRequest) {
+        return ResponseEntity.ok(accountService.updateUserRole(roleRequest));
+    }
 }

@@ -2,6 +2,9 @@ package account.model;
 
 import jakarta.persistence.*;
 
+import java.util.HashSet;
+import java.util.Set;
+
 @Entity
 @Table(name = "users")
 public class User {
@@ -12,6 +15,15 @@ public class User {
     private String lastname;
     private String email;
     private String password;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(
+            name = "user_roles",
+            joinColumns = @JoinColumn(name = "user_id")
+    )
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role", nullable = false)
+    private Set<Role> roles = new HashSet<>();
 
     public User() {
     }
@@ -40,6 +52,18 @@ public class User {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public Set<Role> getRoles() {
+        return roles;
+    }
+
+    public void addRole(Role role) {
+        roles.add(role);
+    }
+
+    public void removeRole(Role role) {
+        roles.remove(role);
     }
 
 }

@@ -12,6 +12,69 @@ files:
   - name: test/AccountServiceTest.java
     visible: true
     learner_created: false
+  - name: src/account/controller/ValidationExceptionHandler.java
+    visible: true
+    learner_created: false
+  - name: src/account/service/AccountService.java
+    visible: true
+    learner_created: false
+  - name: src/account/model/User.java
+    visible: true
+    learner_created: false
+  - name: src/account/config/SecurityConfig.java
+    visible: true
+    learner_created: false
+  - name: src/account/model/UserRequest.java
+    visible: true
+    learner_created: false
+  - name: src/account/repository/UserRepository.java
+    visible: true
+    learner_created: false
+  - name: src/account/model/PasswordRequest.java
+    visible: true
+    learner_created: false
+  - name: src/account/model/PasswordResponse.java
+    visible: true
+    learner_created: false
+  - name: src/account/model/UserResponse.java
+    visible: true
+    learner_created: false
+  - name: src/account/controller/AccountServiceController.java
+    visible: true
+    learner_created: false
+  - name: src/account/config/RestAuthenticationEntryPoint.java
+    visible: true
+    learner_created: false
+  - name: src/account/model/Payment.java
+    visible: true
+    learner_created: false
+  - name: src/account/model/PaymentRequest.java
+    visible: true
+    learner_created: false
+  - name: src/account/model/PaymentResponse.java
+    visible: true
+    learner_created: false
+  - name: src/account/model/SalaryResponse.java
+    visible: true
+    learner_created: false
+  - name: src/account/repository/PaymentRepository.java
+    visible: true
+    learner_created: false
+  - name: src/account/model/Role.java
+    visible: true
+    learner_created: true
+  - name: src/account/model/UserDeletionResponse.java
+    visible: true
+    learner_created: true
+  - name: src/account/model/RoleRequest.java
+    visible: true
+    learner_created: true
+  - name: src/account/model/RoleOperation.java
+    visible: true
+    learner_created: true
 feedback_link: https://hyperskill.org/projects/217/stages/1090/implement#comment
-status: Unchecked
+status: Solved
+feedback:
+  message: Congratulations!
+  time: "Fri, 12 Jun 2026 01:27:14 UTC"
 record: -1

@@ -1,9 +1,12 @@
 package account.model;
 
+import java.util.List;
+
 public record UserResponse(
         Long id,
         String name,
         String lastname,
-        String email
+        String email,
+        List<String> roles
 ) {
 }

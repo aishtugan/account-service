@@ -4,6 +4,7 @@ import account.model.*;
 import account.repository.PaymentRepository;
 import account.repository.UserRepository;
 import org.springframework.context.annotation.Bean;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -41,6 +42,13 @@ public class AccountService {
         }
 
         User user = fromUserRequestToUser(userRequest);
+
+        if (userRepository.count() == 0) { //the first user is an admin
+            user.addRole(Role.ROLE_ADMINISTRATOR);
+        } else {
+            user.addRole(Role.ROLE_USER);
+        }
+
         userRepository.save(user);
 
         return toUserResponse(user);
@@ -55,8 +63,90 @@ public class AccountService {
         return toUserResponse(userRepository.findByEmailIgnoreCase(email).orElseThrow());
     }
 
+    public List<UserResponse> getAllUsers() {
+        return userRepository.findAll(Sort.by(Sort.Direction.ASC, "id")).stream().map(this::toUserResponse).toList();
+    }
+
+    public UserDeletionResponse deleteUser(String userEmail) {
+
+        if (!userRepository.existsByEmailIgnoreCase(userEmail)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found!");
+        }
+
+        User user = userRepository.findByEmailIgnoreCase(userEmail).orElseThrow();
+
+        if (user.getRoles().contains(Role.ROLE_ADMINISTRATOR)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Can't remove ADMINISTRATOR role!");
+        }
+        userRepository.delete(user);
+        return new UserDeletionResponse(userEmail, "Deleted successfully!");
+    }
+
+    public UserResponse updateUserRole(RoleRequest roleRequest) {
+
+        if (!userRepository.existsByEmailIgnoreCase(roleRequest.user())) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found!");
+        }
+
+        try {
+            Role role = Role.valueOf("ROLE_" + roleRequest.role().toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Role not found!");
+        }
+
+        User user = userRepository.findByEmailIgnoreCase(roleRequest.user()).orElseThrow();
+
+        Role role = Role.valueOf("ROLE_" + roleRequest.role().toUpperCase());
+
+        Set<Role> userRoles = user.getRoles();
+
+        if (roleRequest.operation() == RoleOperation.REMOVE) {
+
+            if (role == Role.ROLE_ADMINISTRATOR) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Can't remove ADMINISTRATOR role!");
+            }
+
+            if (!userRoles.contains(role)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The user does not have a role!");
+            }
+
+            if (userRoles.size() == 1) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The user must have at least one role!");
+            }
+
+            user.removeRole(role);
+
+        } else {
+            if (userRoles.contains(role)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The user already has this role!");
+            }
+
+            if ((role == Role.ROLE_ADMINISTRATOR && (userRoles.contains(Role.ROLE_USER) || userRoles.contains(Role.ROLE_ACCOUNTANT)))
+            || ((role == Role.ROLE_ACCOUNTANT || role == Role.ROLE_USER) && userRoles.contains(Role.ROLE_ADMINISTRATOR))) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The user cannot combine administrative and business roles!");
+            }
+
+            user.addRole(role);
+        }
+
+        userRepository.save(user);
+
+        return toUserResponse(user);
+    }
+
     public UserResponse toUserResponse(User user) {
-        return new UserResponse(user.getId(), user.getName(), user.getLastname(), user.getEmail());
+
+        List<String> roles = user.getRoles().stream()
+                .map(Role::name)
+                .sorted()
+                .toList();
+
+        return new UserResponse(
+                user.getId(),
+                user.getName(),
+                user.getLastname(),
+                user.getEmail(),
+                roles);
     }
 
     public User fromUserRequestToUser(UserRequest userRequest) {
