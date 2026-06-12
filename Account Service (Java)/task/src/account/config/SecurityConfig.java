@@ -7,11 +7,13 @@ import account.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.event.AbstractAuthenticationFailureEvent;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -26,6 +28,7 @@ import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
+import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
@@ -46,7 +49,7 @@ public class SecurityConfig {
         RestAuthenticationEntryPoint restAuthenticationEntryPoint = new RestAuthenticationEntryPoint();
 
         return http
-                .httpBasic(Customizer.withDefaults())
+                .httpBasic(basic -> basic.authenticationEntryPoint(authenticationEntryPoint()))
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint(authenticationEntryPoint())
                         .accessDeniedHandler(accessDeniedHandler()))
@@ -66,7 +69,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/api/admin/user/**").hasRole("ADMINISTRATOR")
                         .requestMatchers(HttpMethod.PUT, "/api/admin/user/role").hasRole("ADMINISTRATOR")
                         .requestMatchers(HttpMethod.PUT, "/api/admin/user/access").hasRole("ADMINISTRATOR")
-                        .requestMatchers(HttpMethod.GET, "/api/security/events").hasRole("AUDITOR")
+                        .requestMatchers(HttpMethod.GET, "/api/security/events", "/api/security/events/").hasRole("AUDITOR")
                 )
                 .build();
     }
@@ -128,6 +131,29 @@ public class SecurityConfig {
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, authException.getMessage());
         };
     }
+
+//    @Component
+//    public class AuthenticationFailureListener
+//            implements ApplicationListener<AbstractAuthenticationFailureEvent> {
+//
+//        private final EventLogRepository eventLogRepository;
+//
+//        public AuthenticationFailureListener(EventLogRepository eventLogRepository) {
+//            this.eventLogRepository = eventLogRepository;
+//        }
+//
+//        @Override
+//        public void onApplicationEvent(AbstractAuthenticationFailureEvent event) {
+//            String subject = event.getAuthentication().getName().toLowerCase();
+//
+//            eventLogRepository.save(new EventLog(
+//                    EventAction.LOGIN_FAILED,
+//                    subject,
+//                    "/api/empl/payment", // see note below
+//                    "/api/empl/payment"
+//            ));
+//        }
+//    }
 
     private Optional<String> extractBasicUsername(HttpServletRequest request) {
         String header = request.getHeader(HttpHeaders.AUTHORIZATION);

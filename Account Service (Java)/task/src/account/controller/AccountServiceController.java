@@ -54,16 +54,16 @@ public class AccountServiceController {
     }
 
     @PutMapping("/admin/user/role")
-    public ResponseEntity<UserResponse> updateUserRole(@Valid @RequestBody RoleRequest roleRequest) {
-        return ResponseEntity.ok(accountService.updateUserRole(roleRequest, "/api/admin/user/role"));
+    public ResponseEntity<UserResponse> updateUserRole(@Valid @RequestBody RoleRequest roleRequest, Authentication authentication) {
+        return ResponseEntity.ok(accountService.updateUserRole(roleRequest, authentication.getName(), "/api/admin/user/role"));
     }
 
     @PutMapping("/admin/user/access")
-    public ResponseEntity<StatusResponse> updateUserAccess(@Valid @RequestBody LockUserRequest lockUserRequest) {
-        return ResponseEntity.ok(accountService.updateUserAccess(lockUserRequest, "/api/admin/user/access"));
+    public ResponseEntity<StatusResponse> updateUserAccess(@Valid @RequestBody LockUserRequest lockUserRequest, Authentication authentication) {
+        return ResponseEntity.ok(accountService.updateUserAccess(lockUserRequest, authentication.getName(), "/api/admin/user/access"));
     }
 
-    @GetMapping("/security/events")
+    @GetMapping({"/security/events", "/security/events/"})
     public ResponseEntity<List<EventResponse>> getAllEventLogs() {
         return ResponseEntity.ok(accountService.getAllEventLogs());
     }

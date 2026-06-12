@@ -87,7 +87,7 @@ public class AccountService {
         return new UserDeletionResponse(userEmail, "Deleted successfully!");
     }
 
-    public UserResponse updateUserRole(RoleRequest roleRequest, String path) {
+    public UserResponse updateUserRole(RoleRequest roleRequest, String authUser, String path) {
 
         if (!userRepository.existsByEmailIgnoreCase(roleRequest.user())) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found!");
@@ -118,7 +118,7 @@ public class AccountService {
             if (userRoles.size() == 1) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The user must have at least one role!");
             }
-            writeEventLog(EventAction.REMOVE_ROLE, user.getEmail(), String.format("Remove role %s from %s", roleRequest.role().toUpperCase(), user.getEmail()), path);
+            writeEventLog(EventAction.REMOVE_ROLE, authUser, String.format("Remove role %s from %s", roleRequest.role().toUpperCase(), user.getEmail()), path);
             user.removeRole(role);
 
         } else {
@@ -132,7 +132,7 @@ public class AccountService {
             }
 
             user.addRole(role);
-            writeEventLog(EventAction.GRANT_ROLE, user.getEmail(), String.format("Grant role %s to %s", roleRequest.role().toUpperCase(), user.getEmail()), path);
+            writeEventLog(EventAction.GRANT_ROLE, authUser, String.format("Grant role %s to %s", roleRequest.role().toUpperCase(), user.getEmail()), path);
         }
 
         userRepository.save(user);
@@ -338,14 +338,14 @@ public class AccountService {
         eventLogRepository.save(eventLog);
     }
 
-    public StatusResponse updateUserAccess(LockUserRequest lockUserRequest, String path) {
+    public StatusResponse updateUserAccess(LockUserRequest lockUserRequest, String authUser, String path) {
 
         if (lockUserRequest.operation() == LockOperation.LOCK) {
             lockUser(lockUserRequest.user());
-            writeEventLog(EventAction.LOCK_USER, lockUserRequest.user(), String.format("Lock user %s", lockUserRequest.user()), path);
+            writeEventLog(EventAction.LOCK_USER, authUser, String.format("Lock user %s", lockUserRequest.user()), path);
         } else if (lockUserRequest.operation() == LockOperation.UNLOCK) {
             unlockUser(lockUserRequest.user());
-            writeEventLog(EventAction.UNLOCK_USER, lockUserRequest.user(), String.format("Unlock user %s", lockUserRequest.user()), path);
+            writeEventLog(EventAction.UNLOCK_USER, authUser, String.format("Unlock user %s", lockUserRequest.user()), path);
         } else {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid operation!");
         }
